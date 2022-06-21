@@ -1,0 +1,109 @@
+---
+title: "Word Counts in nonprofit Names"
+author: "Paula Jennings"
+date: '2022-06-21'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Get libraries needed and Read files
+
+```{r getfiles}
+library(dplyr)
+library(tidytext)
+library(ggplot2)
+library(readr)
+library(readxl)
+
+may_non_profit_name_list_for_open_data_portal <- read_excel("may-non_profit_name_list_for_open_data_portal.xlsx")
+head(may_non_profit_name_list_for_open_data_portal)
+
+
+X2338_Calgary_Charities_CRA2020 <- read_csv("2338_Calgary_Charities_CRA2020.csv")
+head(X2338_Calgary_Charities_CRA2020)
+
+```
+
+## isolate the colums with names and find unique entries between the CRA data and the Alberta nonprofits listing
+```{r one nonprofit list, echo=FALSE}
+abdata <- data.frame(may_non_profit_name_list_for_open_data_portal) %>%
+  filter(City == "CALGARY") %>%
+  filter(Status == "Active") %>%
+  select("Legal.Entity.Name") %>%
+  rename(Name = "Legal.Entity.Name")
+cradata <- data.frame(X2338_Calgary_Charities_CRA2020) %>%
+  mutate(Name = toupper(Legal.name)) %>%
+  select(Name)
+allcalgarynp <- full_join(cradata,abdata)
+npnames <- distinct(allcalgarynp) %>%
+  unnest_tokens(word, Name, drop = F) %>%
+  anti_join(stop_words)
+```
+
+## plots on work frequency
+```{r plots}
+npnames %>%
+  count(word, sort = TRUE) %>%
+  filter(n > 50) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word,n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip()
+
+npnames %>%
+  count(word, sort = TRUE) %>%
+  filter(n <= 50) %>%
+  filter(n > 30) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word,n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip()
+
+npnames %>%
+  count(word, sort = TRUE) %>%
+  filter(n <= 30) %>%
+  filter(n > 20) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word,n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip()
+
+npnames %>%
+  count(word, sort = TRUE) %>%
+  filter(n <= 20) %>%
+  filter(n > 15) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word,n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip()
+
+npnames %>%
+  count(word, sort = TRUE) %>%
+  filter(n <= 15) %>%
+  filter(n > 13) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word,n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip()
+
+npnames %>%
+  count(word, sort = TRUE) %>%
+  filter(n <= 13) %>%
+  filter(n > 11) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word,n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip()
+
+
+
+```
