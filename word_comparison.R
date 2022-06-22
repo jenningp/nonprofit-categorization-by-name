@@ -46,6 +46,11 @@ frequency_table_common <- bind_rows(abdata,cradata) %>%
   filter(`CRA charity` >= 0 & `CRA charity`<= .001) %>%
   filter(`Alberta Open Data nonprofit Listing` >= 0 & `Alberta Open Data nonprofit Listing` <= .001)
 
+frequency_table_common_1 <- distinct(bind_rows(abdata,cradata)) %>%
+  count(source, word) %>%
+  group_by(word) %>%
+  spread(source, n) %>%
+  filter(`CRA charity` == 1 & `Alberta Open Data nonprofit Listing` == 1)
 
  
 
