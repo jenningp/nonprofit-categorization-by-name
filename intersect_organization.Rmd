@@ -1,0 +1,80 @@
+---
+title: Exploring what is in common with CRA and Alberta charity/nonprofit listing
+  for Calgary
+author: "Paula Jennings"
+date: '2022-06-28'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyr)
+library(tidytext)
+library(ggplot2)
+library(readr)
+library(readxl)
+```
+
+## Read source files
+Read and full join by Legal Entity Name of organization to keep information from all rows. 
+
+
+```{r read files}
+may_non_profit_name_list_for_open_data_portal <- read_excel("may-non_profit_name_list_for_open_data_portal.xlsx")
+head(may_non_profit_name_list_for_open_data_portal)
+
+
+X2338_Calgary_Charities_CRA2020 <- read_csv("2338_Calgary_Charities_CRA2020.csv")
+head(X2338_Calgary_Charities_CRA2020)
+
+dfabdata <- data.frame(distinct(may_non_profit_name_list_for_open_data_portal)) %>%
+  filter(City == "CALGARY") %>%
+  rename(Name = "Legal.Entity.Name") %>%
+  mutate(source = "Alberta Open Data nonprofit Listing")
+dfcradata <- data.frame(distinct(X2338_Calgary_Charities_CRA2020)) %>%
+  mutate(Name = toupper(Legal.name)) %>%
+  select(-City, -Account.name) %>%
+  mutate(source = "CRA charity")
+
+allnprecords <- full_join(dfabdata, dfcradata, by="Name")
+
+```
+
+## Focus on organizations in common to Alberta list and CRA originating list
+
+Looking at number of organizations that intersect and are on both lists. The scope of this project was to consider Active organizations in Calgary defined by the Alberta government and then intersect with CRA T1030 Registered Charity Returns. Some of the organizations that appear in CRA data did not appear on the Active Alberta list. This gives how organizations intersect by Status.
+
+
+```{r status, echo=FALSE}
+allnprecords %>% 
+  rename(registered = Count.of.Account.name) %>%
+  mutate(intersect_flag = replace_na(registered,0)) %>%
+  mutate(registered = ifelse(intersect_flag == 0, "AB", "CRA")) %>%
+  count(Status, registered, sort= T) %>%
+   bind_rows(summarize(., across(where(is.numeric), sum), across(where(is.character), ~"Total")))
+```
+## Focus
+The data with from the CRA is context rich and it seems reasonable to limit the categorization exercise with organizations that are active. We will have to find out why 859 organizations appear in the CRA dataset and work with the 1418 Active organizations that have filed returns with the CRA. If program information enriches our ability to apply keywords and tage to categories we can test how well that works on analyzing the organization names of the 4728 Active Alberta organizations that we have no program information for.
+```{r focus}
+allnprecords %>% 
+  rename(registered = Count.of.Account.name) %>%
+  mutate(intersect_flag = replace_na(registered,0)) %>%
+  mutate(registered = ifelse(intersect_flag == 0, "AB", "CRA")) %>%
+  count(Status, registered, sort= T) %>%
+  mutate(cases = replace_na(Status, "not found in AB list")) %>%
+  filter(cases == "Active"| cases == "not found in AB list") %>%
+  rename(count = n) %>%
+  select(-Status) %>%
+  bind_rows(summarize(., across(where(is.numeric), sum), across(where(is.character), ~"Total")))
+
+```
+## Subsetting to the focused data
+The data we will concentrate on we will place in a dataframe
+```{r subset}
+nplist <- allnprecords %>% 
+  rename(registered = Count.of.Account.name) %>%
+  mutate(intersect_flag = replace_na(registered,0)) %>%
+  filter(Status == "Active")
+
+```
