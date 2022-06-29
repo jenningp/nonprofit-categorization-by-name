@@ -153,3 +153,27 @@ title_word_pairs %>%
   theme_void()
 
 ```
+# summing the stemmed words
+
+There are many that occur infrequently and these are probably where the tags that provide most context occur. Is it possible to group them or are some essentialy synonymous with the larger categories of religion, location, education and others?
+```{r stemmed words}
+
+title_word_pairs %>%
+  bind_rows(abdata,cradata) %>%
+  mutate(stemmed = stemDocument(word)) %>%
+  select(word, stemmed) %>%
+  count(stemmed) %>%
+  arrange(desc(n)) %>%
+  ggplot(aes(x = n)) +
+  geom_freqpoly(binwidth = 1)
+
+title_word_pairs %>%
+  bind_rows(abdata,cradata) %>%
+  mutate(stemmed = stemDocument(word)) %>%
+  select(word, stemmed) %>%
+  count(stemmed) %>%
+  arrange(desc(n)) %>%
+  filter(n < 5) %>%
+  ggplot(aes(x = n)) +
+  geom_freqpoly(binwidth = 1)
+```

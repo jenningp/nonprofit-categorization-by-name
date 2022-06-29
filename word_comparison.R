@@ -128,5 +128,26 @@ title_word_pairs %>%
                  point.padding = unit(0.2, "lines")) +
   theme_void()
 
+title_word_pairs %>%
+  bind_rows(abdata,cradata) %>%
+  mutate(stemmed = stemDocument(word)) %>%
+  select(word, stemmed) %>%
+  count(stemmed) %>%
+  arrange(desc(n)) %>%
+  ggplot(aes(x = n)) +
+  geom_freqpoly(binwidth = 1)
 
+title_word_pairs %>%
+  bind_rows(abdata,cradata) %>%
+  mutate(stemmed = stemDocument(word)) %>%
+  select(word, stemmed) %>%
+  count(stemmed) %>%
+  arrange(desc(n)) %>%
+  filter(n < 5) %>%
+  ggplot(aes(x = n)) +
+  geom_freqpoly(binwidth = 1)
+
+
+  
+  
   
