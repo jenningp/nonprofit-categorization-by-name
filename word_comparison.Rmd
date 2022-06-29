@@ -1,3 +1,16 @@
+---
+title: "Word Comparison Between CRA organizations and AB listed organizations"
+author: "Paula Jennings"
+date: '2022-06-29'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read input files
+```{r setup and read input}
 library(dplyr)
 library(tidyr)
 library(tidytext)
@@ -11,13 +24,18 @@ library(widyr)
 
 
 may_non_profit_name_list_for_open_data_portal <- read_excel("may-non_profit_name_list_for_open_data_portal.xlsx")
-View(may_non_profit_name_list_for_open_data_portal)
+head(may_non_profit_name_list_for_open_data_portal)
 
 
 X2338_Calgary_Charities_CRA2020 <- read_csv("2338_Calgary_Charities_CRA2020.csv")
-View(X2338_Calgary_Charities_CRA2020)
+head(X2338_Calgary_Charities_CRA2020)
+```
 
+## Word extraction from Legal Names
 
+Get the words and keep track of where the Legal Name came from, being the Alberta Non-profit listing or the CRA.
+
+```{r dataframe words used in Legal name and keeping track of sources, echo=FALSE}
 abdata <- data.frame(distinct(may_non_profit_name_list_for_open_data_portal)) %>%
   filter(City == "CALGARY") %>%
   filter(Status == "Active") %>%
@@ -32,8 +50,9 @@ cradata <- data.frame(distinct(X2338_Calgary_Charities_CRA2020)) %>%
   unnest_tokens(word, Name, drop = F) %>%
   anti_join(stop_words) %>%
   mutate(source = "CRA charity")
-
-
+```
+## Count frequencies of words
+```{r frequencies}
 frequency_table <- bind_rows(abdata,cradata) %>%
   count(source, word) %>%
   group_by(source) %>%
@@ -59,9 +78,9 @@ frequency_table_common_list <- distinct(bind_rows(abdata,cradata)) %>%
   group_by(word) %>%
   spread(source, n) %>%
   filter(`CRA charity` == 1 & `Alberta Open Data nonprofit Listing` == 1)
-
-
-
+```
+## plot of the common word proportion comparison
+```{r plot word comparison}
 ggplot(frequency_table, aes(x = `CRA charity`, y = `Alberta Open Data nonprofit Listing`)) +
   geom_abline(color = "gray40", lty = 2) +
   geom_jitter(alpha = 0.1, size = 2.5, width = 0.3, height = 0.3) +
@@ -71,9 +90,9 @@ ggplot(frequency_table, aes(x = `CRA charity`, y = `Alberta Open Data nonprofit 
   scale_color_gradient(limits = c(0, 0.001),
                        low = "darkslategray4", high = "gray75") 
 
-
-
-
+```
+## stemming words and plotting
+```{r stemming}
 frequency_table_stemmed <- bind_rows(abdata,cradata) %>%
   mutate(stemmed = stemDocument(word)) %>%
   count(source, stemmed) %>%
@@ -106,6 +125,11 @@ ggplot(frequency_table_stemmed_zoom, aes(x = `CRA charity`, y = `Alberta Open Da
   scale_color_gradient(limits = c(0, 0.001),
                        low = "darkslategray4", high = "gray75") 
 
+```
+## title word pairs
+
+There are a few pairs or associated words that dominate the whole set. Number one is the location we have filtered our exploration on - Calgary. It probably is not uncommon for many non profits to put their location as part of their name - so I gues this should not be unexpected!
+```{r title work pairs}
 title_word_pairs <- bind_rows(abdata,cradata) %>%
   mutate(stemmed = stemDocument(word)) %>%
   select(word, stemmed) %>%
@@ -128,5 +152,4 @@ title_word_pairs %>%
                  point.padding = unit(0.2, "lines")) +
   theme_void()
 
-
-  
+```
