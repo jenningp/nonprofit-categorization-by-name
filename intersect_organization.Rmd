@@ -70,11 +70,32 @@ allnprecords %>%
 
 ```
 ## Subsetting to the focused data
-The data we will concentrate on we will place in a dataframe
+The data we will concentrate on we will place in a dataframe and then try and figure out if there is a pattern between the description the Alberta listing notes for each organization and if they report to the CRA or not.
+
 ```{r subset}
 nplist <- allnprecords %>% 
   rename(registered = Count.of.Account.name) %>%
   mutate(intersect_flag = replace_na(registered,0)) %>%
   filter(Status == "Active")
 
+nplist %>%
+  mutate(Organization_type = replace_na(Description_E, "Not in CRA thereby not defined")) %>%
+  group_by(Legal.Entity.Type.Description, Organization_type) %>%
+  summarize(n = n()) %>%
+  pivot_wider(names_from = Legal.Entity.Type.Description, values_from= n)
+
+nplist %>%
+  mutate(Organization_type = replace_na(Description_E, "Not in CRA thereby not defined")) %>%
+  group_by(Legal.Entity.Type.Description) %>%
+  count(Organization_type) %>%
+  mutate(proportion = n / sum(n)) %>%
+  ggplot(aes(x=Legal.Entity.Type.Description, y=proportion, fill = Organization_type)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Are certain Alberta Legal Entity Descriptions have\n organizations that do not need to report to the CRA?") +
+  coord_flip()
+
 ```
+## Description grouping and reporting to CRA is there a correlation?
+It appears that a proportion of every group except for the Alberta's listing "Recreation Public Company" has a proportion of organizations that do report to the CRA and there is no real pattern. The Organization_type comes from the CRA and in a few cases there seems to be a contradiction where Public Foundation appears under Private Act Non-Profit Corporation and Non-Profit Private Company for example. Some definitions from the sources and knowing if the source of the description and if it is checked would be helpful in determining these that do not quite fit.
+
+Since CRA reporting and non CRA reporting share the Alberta Description then we may have a chance in adding tags, adjectives and categorization based on the more comprehensive CRA data and then try and apply it to the Alberta organization names (which would be as good as how descriptive and accurate the name is).

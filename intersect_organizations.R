@@ -27,21 +27,48 @@ allnprecords <- full_join(dfabdata, dfcradata, by="Name")
 # to get a table of all cases, the status coming from the larger Alberta list, it was noted that (sunflower organization)
 allnprecords %>% 
   rename(registered = Count.of.Account.name) %>%
-  mutate(test = replace_na(registered,0)) %>%
-  mutate(registered = ifelse(test == 0, "AB", "CRA")) %>%
+  mutate(intersect_flag = replace_na(registered,0)) %>%
+  mutate(registered = ifelse(intersect_flag == 0, "AB", "CRA")) %>%
   count(Status, registered, sort= T) %>%
    bind_rows(summarize(., across(where(is.numeric), sum), across(where(is.character), ~"Total")))
 
+
 allnprecords %>% 
   rename(registered = Count.of.Account.name) %>%
-  mutate(test = replace_na(registered,0)) %>%
-  mutate(registered = ifelse(test == 0, "AB", "CRA")) %>%
+  mutate(intersect_flag = replace_na(registered,0)) %>%
+  mutate(registered = ifelse(intersect_flag == 0, "AB", "CRA")) %>%
   count(Status, registered, sort= T) %>%
   mutate(cases = replace_na(Status, "not found in AB list")) %>%
   filter(cases == "Active"| cases == "not found in AB list") %>%
   rename(count = n) %>%
   select(-Status) %>%
   bind_rows(summarize(., across(where(is.numeric), sum), across(where(is.character), ~"Total")))
+
+nplist <- allnprecords %>% 
+  rename(registered = Count.of.Account.name) %>%
+  mutate(intersect_flag = replace_na(registered,0)) %>%
+  filter(Status == "Active")
+
+nplist %>%
+  mutate(Organization_type = replace_na(Description_E, "Not in CRA thereby not defined")) %>%
+  group_by(Legal.Entity.Type.Description, Organization_type) %>%
+  summarize(n = n()) %>%
+  pivot_wider(names_from = Legal.Entity.Type.Description, values_from= n)
+
+nplist %>%
+  mutate(Organization_type = replace_na(Description_E, "Not in CRA thereby not defined")) %>%
+  group_by(Legal.Entity.Type.Description) %>%
+  count(Organization_type) %>%
+  mutate(proportion = n / sum(n)) %>%
+  ggplot(aes(x=Legal.Entity.Type.Description, y=proportion, fill = Organization_type)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Are certain Alberta Legal Entity Descriptions have\n organizations that do not need to report to the CRA?") +
+  coord_flip()
+
+
+
+
+
 
 CRAnotAB <- allnprecords %>% 
   rename(registered = Count.of.Account.name) %>%
